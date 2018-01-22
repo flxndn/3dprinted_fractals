@@ -1,3 +1,7 @@
+import math
+from inspect import getmembers
+from pprint import pprint
+
 #-------------------------------------------------------------------------------
 class Point:
 #-------------------------------------------------------------------------------
@@ -7,10 +11,6 @@ class Point:
 		self.x = x
 		self.y = y
 		self.z = z
-	#---------------------------------------------------------------------------
-	def toString(self):
-	#---------------------------------------------------------------------------
-		return "Point:(" + self.x + ", " + self.y + ", " + self.z + ")";
 #-------------------------------------------------------------------------------
 class _3DPrintable:
 #-------------------------------------------------------------------------------
@@ -31,10 +31,6 @@ class Sphere(_3DPrintable):
 	#---------------------------------------------------------------------------
 		# TODO
 		pass
-	#---------------------------------------------------------------------------
-	def toString():
-	#---------------------------------------------------------------------------
-		return "Sphere:( center: " + center.toString() + ", raidius: " + self.radius +")\n";
 #-------------------------------------------------------------------------------
 class Cylinder(_3DPrintable):
 	#---------------------------------------------------------------------------
@@ -80,11 +76,11 @@ class Thetraedron(_3DGeometric):
 	def __init__(self, first_point, second_point, rotation):
 	#---------------------------------------------------------------------------
 		self.vertices=[]
-		self.vertices[0] = first_point
-		self.vertices[1] = second_point
-		
-		self.vertices[2] = Point(0.5, math.sqrt(1-0.5^2), 0);
-		self.vertices[3] = Point(0.5, 0.5/math.sqrt(3), math.sqrt(2/3));
+		self.vertices.append(first_point)
+		self.vertices.append(second_point)
+		# TODO: insert transformed points, no cannonical points
+		self.vertices.append(Point(0.5, math.sqrt(1.0-math.pow(0.5,2.0)), 0))
+		self.vertices.append(Point(0.5, 0.5/math.sqrt(3.0), math.sqrt(2.0/3.0)))
 	#---------------------------------------------------------------------------
 	def vertices(self):
 	#---------------------------------------------------------------------------
@@ -101,4 +97,4 @@ class Thetraedron(_3DGeometric):
 		return ret
 #-------------------------------------------------------------------------------
 t=Thetraedron(Point(0,0,0), Point(0,1,0), 0)
-print t.toString();
+pprint(getmembers(t))
