@@ -3,7 +3,7 @@ import numpy
 
 from inspect import getmembers
 from pprint import pprint
-from visual import * # vector elements, cylinder, sphere
+#from vpython import * # vector elements, cylinder, sphere
 
 #-------------------------------------------------------------------------------
 class Point:
@@ -14,6 +14,10 @@ class Point:
 		self.x = x
 		self.y = y
 		self.z = z
+	#---------------------------------------------------------------------------
+	def __str__(self):
+	#---------------------------------------------------------------------------
+		return "[{0}, {1}, {2}]".format(self.x, self.y, self.z)
 #-------------------------------------------------------------------------------
 class _3DPrintable:
 #-------------------------------------------------------------------------------
@@ -36,43 +40,62 @@ class Transform:
 	def compose(self, transform):
 	#---------------------------------------------------------------------------
 		#print "// self\n"
-		#print self.t
+		#print (self.t)
 
 		#print "// transform\n"
 		#print (transform.t)
 
-		self.t = self.t * transform.t
+		self.t = transform.t * self.t
 		#print "// self 2\n"
 		#print (self.t)
+	#---------------------------------------------------------------------------
+	def __str__(self):
+	#---------------------------------------------------------------------------
+		t = self.t
+		return "[ [ {0}, {1}, {2}, {3}], [ {4}, {5}, {6}, {7}], [ {8}, {9}, {10}, {11}], [ {12}, {13}, {14}, {15}]]".format(
+						t[0,0], t[0,1], t[0,2], t[0,3],
+						t[1,0], t[1,1], t[1,2], t[1,3],
+						t[2,0], t[2,1], t[2,2], t[2,3],
+						t[3,0], t[3,1], t[3,2], t[3,3])
 #-------------------------------------------------------------------------------
 class TransformUnitaryXAxis(Transform):
 #-------------------------------------------------------------------------------
 	#---------------------------------------------------------------------------
 	def __init__(self, origin, end, angle):
 	#---------------------------------------------------------------------------
-		#print "// TransformUnitaryXAxis::angle: {0}\n".format(angle)
+		print "// TransformUnitaryXAxis::angle: {0}".format(angle)
 		difference = Point( end.x - origin.x, end.y - origin.y, end.z - origin.z) 
 		modulus = math.sqrt( math.pow(difference.x,2) + math.pow(difference.y, 2) + math.pow(difference.z,2))
-		#print "// TransformUnitaryXAxis::modulus: {0}\n".format(modulus)
+		print "// TransformUnitaryXAxis::modulus: {0}".format(modulus)
 		if modulus < 1.0e-6 :
 			raise
 
 		modulus_base = math.sqrt( math.pow(difference.x,2) + math.pow(difference.y, 2) )
-		#print "// TransformUnitaryXAxis::modulus_base: {0}\n".format(modulus_base)
-		#print "// TransformUnitaryXAxis::dify: {0}, difx: {0}\n".format(difference.y, difference.x)
+		print "// TransformUnitaryXAxis::modulus_base: {0}".format(modulus_base)
+		print "// TransformUnitaryXAxis::difx: {0}, dify: {1}".format(difference.x, difference.y)
 		if modulus_base < 1.0e-6:
 			delta = math.pi/2
 			fi = 0.0
 		else:
-			delta=math.acos(modulus/modulus_base)
-			if difference.x < 1.0e-6:
-				fi=math.pi/2
-			else:
-				fi=math.atan2(difference.y,difference.x)
-		#print "// fi: {0}, delta: {1}, angle: {2}, modulus: {3}".format(fi, delta, angle, modulus)
+			delta=math.acos(modulus_base/modulus)
+			fi=math.atan2(difference.y,difference.x)
+			print "// fi: {0}, dx: {1}, dy: {2}".format(fi, difference.x, difference.y)
+		print "// fi: {0}, delta: {1}, angle: {2}, modulus: {3}".format(fi, delta, angle, modulus)
+		#print 'u'
+		#print Unity().t
+		#print 'rz'
+		#print RotateZ(fi)
+		#print 'ry'
+		#print RotateY(delta)
+		#print 'rx'
+		#print RotateX(angle)
+		#print 'sc'
+		#print Scale(modulus)
+		#print 'd'
+		#print Displacement(origin)
 		self.t=Unity().t
-		self.compose(RotateZ(fi))
 		self.compose(RotateY(delta))
+		self.compose(RotateZ(fi))
 		self.compose(RotateX(angle))
 		self.compose(Scale(modulus))
 		self.compose(Displacement(origin))
@@ -98,10 +121,14 @@ class RotateX(Transform):
 		c = math.cos(angle)
 		s = math.sin(angle)
 
+		#print 'angle:{0}, c:{1} s{2}'.format(angle, c, s)
+
 		self.t[1,1]=c
 		self.t[1,2]=s
 		self.t[2,1]=-s
 		self.t[2,2]=c
+		
+		#print self
 #-------------------------------------------------------------------------------
 class RotateY(Transform):
 #-------------------------------------------------------------------------------
@@ -129,8 +156,8 @@ class RotateZ(Transform):
 		s = math.sin(angle)
 
 		self.t[0,0]=c
-		self.t[0,1]=s
-		self.t[1,0]=-s
+		self.t[0,1]=-s
+		self.t[1,0]=s
 		self.t[1,1]=c
 #-------------------------------------------------------------------------------
 class Displacement(Transform):
@@ -147,13 +174,13 @@ class Zero(Transform):
 #-------------------------------------------------------------------------------
 	def __init__(self):
 	#---------------------------------------------------------------------------
-		self.t=numpy.matrix([[0, 0, 0, 0],[ 0, 0, 0, 0],[ 0, 0, 0, 0],[ 0, 0, 0, 0]]);
+		self.t=numpy.matrix([[0.0, 0.0, 0.0, 0.0],[ 0.0, 0.0, 0.0, 0.0],[ 0.0, 0.0, 0.0, 0.0],[ 0.0, 0.0, 0.0, 0.0]]);
 #-------------------------------------------------------------------------------
 class Unity(Transform):
 #-------------------------------------------------------------------------------
 	def __init__(self):
 	#---------------------------------------------------------------------------
-		self.t=numpy.matrix([[1, 0, 0, 0],[ 0, 1, 0, 0],[ 0, 0, 1, 0],[ 0, 0, 0, 1]]);
+		self.t=numpy.matrix([[1.0, 0.0, 0.0, 0.0],[ 0.0, 1.0, 0.0, 0.0],[ 0.0, 0.0, 1.0, 0.0],[ 0.0, 0.0, 0.0, 1.0]]);
 #-------------------------------------------------------------------------------
 class Sphere(_3DPrintable):
 #-------------------------------------------------------------------------------
@@ -174,14 +201,18 @@ class Cylinder(_3DPrintable):
 	#---------------------------------------------------------------------------
 	def __init__(self,origin, end, radius):
 	#---------------------------------------------------------------------------
-		self.center = origin
+		self.origin = origin
 		self.end = end
 		self.radius = radius
 	#---------------------------------------------------------------------------
 	def toSCAD(self):
 	#---------------------------------------------------------------------------
-		# TODO
-		return ''
+		print "// {0}->{1}".format(self.origin,self.end)
+
+		transform = TransformUnitaryXAxis(self.origin, self.end, 0)
+		s = 'multmatrix(m={}){{rotate([0,90,0]){{cylinder(r={},center=false,$fn=20);}};}}\n'.format(str(transform),self.radius/10.0)
+		return s
+
 		# cylinder($fn = 0, $fa = 12.000000, $fs = 2.000000, h = 20.0, r1 = 2.0, r2 = 2.0, center = false);
 #-------------------------------------------------------------------------------
 class _3DGeometric(_3DPrintable):
@@ -201,6 +232,7 @@ class _3DGeometric(_3DPrintable):
 			sphere=Sphere(vertex, 1)
 			ret = ret + sphere.toSCAD()
 
+		contador=0
 		for edge in self.edges():
 			cylinder = Cylinder(edge[0], edge[1], 1)
 			ret = ret + cylinder.toSCAD()
@@ -218,13 +250,15 @@ class Tetrahedron(_3DGeometric):
 		self.v=[]
 		self.v.append(first_point)
 		self.v.append(second_point)
-		# TODO: insert transformed points, no cannonical points
 		transform = TransformUnitaryXAxis(first_point, second_point, rotation)
+		#print '// transform: ' + str(transform)
 
 		p3 = Point(0.5, math.sqrt(1.0-math.pow(0.5,2.0)), 0)
+		#print '// p3: ' + str(p3)
 		self.v.append(transform.apply(p3))
 
 		p4 = Point(0.5, 0.5/math.sqrt(3.0), math.sqrt(2.0/3.0))
+		#print '// p4: ' + str(p4)
 		self.v.append(transform.apply(p4))
 	#---------------------------------------------------------------------------
 	def vertices(self):
@@ -254,6 +288,14 @@ class Scaffold(_3DGeometric):
 	def edges(self):
 	#---------------------------------------------------------------------------
 		return self.base.edges()
+	#---------------------------------------------------------------------------
+	def __str__(self):
+	#---------------------------------------------------------------------------
+		s='['
+		for vertex in self.vertices():
+			s = s + vertex.__str__()
+		s = s + "]"
+		return s
 #-------------------------------------------------------------------------------
 class ScaffoldTetrahedron(Scaffold):
 #-------------------------------------------------------------------------------
@@ -264,20 +306,18 @@ class ScaffoldTetrahedron(Scaffold):
 		self.base = Tetrahedron(first_point, second_point, rotation)
 #-------------------------------------------------------------------------------
 
-t=ScaffoldTetrahedron(Point(0,0,0), Point(10,0,0), 0)
-print t.toSCAD()
+t1=ScaffoldTetrahedron(Point(0,0,0), Point(10,0,0), 0.00)
+print t1.toSCAD()
 
-#trans=Displacement(Point(2,3,4));
-#print trans.t
+#t2=ScaffoldTetrahedron(Point(10,0,0), Point(20,0,0), 0.00)
+#print t2.toSCAD()
 
-#trans=RotateX(3.14/6);
-#print trans.t
+#t3=ScaffoldTetrahedron(t1.vertices()[2], t2.vertices()[2], 0.00)
+#print t3.toSCAD()
 
-#rotatez=RotateZ(3.14/6);
-#print rotatez.t
+#t4=ScaffoldTetrahedron(t1.vertices()[3], t2.vertices()[3], 0.00)
+#print t4.toSCAD()
 
-#scale2=Scale(2);
-#print scale2.t
+#c=Cylinder(Point(0, 0,0), Point(5.0, 2.88675134595, 8.16496580928), 1)
+#print c.toSCAD()
 
-#scale_rotate = scale2.compose(rotatez)
-#print scale_rotate.t
