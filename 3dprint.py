@@ -18,8 +18,13 @@ class Point:
 	def __str__(self):
 	#---------------------------------------------------------------------------
 		return "[{0}, {1}, {2}]".format(self.x, self.y, self.z)
+	#---------------------------------------------------------------------------
+	@staticmethod
+	def medium(a,b):
+	#---------------------------------------------------------------------------
+		return Point( (a.x+b.x)/2, (a.y+b.y)/2, (a.z+b.z)/2 );
 #-------------------------------------------------------------------------------
-class _3DPrintable:
+class _3DPrintable(object):
 #-------------------------------------------------------------------------------
 	#---------------------------------------------------------------------------
 	def toSCAD(self):
@@ -63,24 +68,24 @@ class TransformUnitaryXAxis(Transform):
 	#---------------------------------------------------------------------------
 	def __init__(self, origin, end, angle):
 	#---------------------------------------------------------------------------
-		print "// TransformUnitaryXAxis::angle: {0}".format(angle)
+		#print "// TransformUnitaryXAxis::angle: {0}".format(angle)
 		difference = Point( end.x - origin.x, end.y - origin.y, end.z - origin.z) 
 		modulus = math.sqrt( math.pow(difference.x,2) + math.pow(difference.y, 2) + math.pow(difference.z,2))
-		print "// TransformUnitaryXAxis::modulus: {0}".format(modulus)
+		#print "// TransformUnitaryXAxis::modulus: {0}".format(modulus)
 		if modulus < 1.0e-6 :
 			raise
 
 		modulus_base = math.sqrt( math.pow(difference.x,2) + math.pow(difference.y, 2) )
-		print "// TransformUnitaryXAxis::modulus_base: {0}".format(modulus_base)
-		print "// TransformUnitaryXAxis::difx: {0}, dify: {1}".format(difference.x, difference.y)
+		#print "// TransformUnitaryXAxis::modulus_base: {0}".format(modulus_base)
+		#print "// TransformUnitaryXAxis::difx: {0}, dify: {1}".format(difference.x, difference.y)
 		if modulus_base < 1.0e-6:
 			delta = math.pi/2
 			fi = 0.0
 		else:
 			delta=math.acos(modulus_base/modulus)
 			fi=math.atan2(difference.y,difference.x)
-			print "// fi: {0}, dx: {1}, dy: {2}".format(fi, difference.x, difference.y)
-		print "// fi: {0}, delta: {1}, angle: {2}, modulus: {3}".format(fi, delta, angle, modulus)
+			#print "// fi: {0}, dx: {1}, dy: {2}".format(fi, difference.x, difference.y)
+		#print "// fi: {0}, delta: {1}, angle: {2}, modulus: {3}".format(fi, delta, angle, modulus)
 		#print 'u'
 		#print Unity().t
 		#print 'rz'
@@ -207,7 +212,7 @@ class Cylinder(_3DPrintable):
 	#---------------------------------------------------------------------------
 	def toSCAD(self):
 	#---------------------------------------------------------------------------
-		print "// {0}->{1}".format(self.origin,self.end)
+		#print "// {0}->{1}".format(self.origin,self.end)
 
 		transform = TransformUnitaryXAxis(self.origin, self.end, 0)
 		s = 'multmatrix(m={}){{rotate([0,90,0]){{cylinder(r={},center=false,$fn=20);}};}}\n'.format(str(transform),self.radius/10.0)
@@ -301,22 +306,42 @@ class ScaffoldTetrahedron(Scaffold):
 #-------------------------------------------------------------------------------
 	def __init__(self, first_point, second_point, rotation):
 	#---------------------------------------------------------------------------
-		#print "// ScaffoldTetrahedron::rotation: {0}\n".format(rotation)
-
 		self.base = Tetrahedron(first_point, second_point, rotation)
 #-------------------------------------------------------------------------------
+class SierpinskyScaffoldTetrahedron(ScaffoldTetrahedron):
+#-------------------------------------------------------------------------------
+	def __init__(self, first_point, second_point, rotation, level):
+	#---------------------------------------------------------------------------
+		super(SierpinskyScaffoldTetrahedron, self).__init__(first_point, second_point, rotation)
+		self.level = level
+		self.rotation = rotation
+	#---------------------------------------------------------------------------
+	def toSCAD(self):
+	#---------------------------------------------------------------------------
+		s = ''
+		v = self.vertices()
 
-t1=ScaffoldTetrahedron(Point(0,0,0), Point(10,0,0), 0.00)
-print t1.toSCAD()
+		if self.level > 0:
+			bases = [	[ v[0], Point.medium(v[0], v[1]) ],
+						[ Point.medium(v[0], v[1]), v[1] ],
+						[ Point.medium(v[0], v[2]), Point.medium(v[1], v[2]) ],
+						[ Point.medium(v[0], v[3]), Point.medium(v[1], v[3]) ] ]
 
-#t2=ScaffoldTetrahedron(Point(10,0,0), Point(20,0,0), 0.00)
-#print t2.toSCAD()
+			for base in bases:
+				sub = SierpinskyScaffoldTetrahedron(base[0], base[1], self.rotation, self.level -1)
+				s = s + sub.toSCAD()
+		else:
+			sub = ScaffoldTetrahedron(v[0], v[1], self.rotation)
+			s = sub.toSCAD()
 
-#t3=ScaffoldTetrahedron(t1.vertices()[2], t2.vertices()[2], 0.00)
-#print t3.toSCAD()
+		return s
+#-------------------------------------------------------------------------------
 
-#t4=ScaffoldTetrahedron(t1.vertices()[3], t2.vertices()[3], 0.00)
-#print t4.toSCAD()
+#t1=ScaffoldTetrahedron(Point(0,0,0), Point(10,0,0), 0.00)
+#print t1.toSCAD()
+
+st=SierpinskyScaffoldTetrahedron(Point(0,0,0), Point(10000,0,0), 0.00, 5)
+print st.toSCAD()
 
 #c=Cylinder(Point(0, 0,0), Point(5.0, 2.88675134595, 8.16496580928), 1)
 #print c.toSCAD()
